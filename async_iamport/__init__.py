@@ -1,5 +1,3 @@
-from .session import AiohttpSession, HttpError, ResponseError
+from .client import AsyncIamport, HttpError, ResponseError
 
-__all__ = [
-    AiohttpSession, HttpError, ResponseError
-]
+__all__ = ["AsyncIamport", "HttpError", "ResponseError"]

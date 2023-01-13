@@ -1,13 +1,14 @@
-from socket import AF_INET
-from typing import List, Optional, Dict
-
-import aiohttp
 import json
 from http import HTTPStatus
-from datetime import datetime
+from socket import AF_INET
+from typing import Dict, Optional
+
+import aiohttp
+import arrow
+
 
 IAMPORT_API_URL = "https://api.iamport.kr"
-VALID_TOKEN_GAP = 60
+TOKEN_REFRESH_GAP = 120  # token 만료 1500s 정도
 DEFAULT_TIMEOUT = 5
 DEFAULT_POOL_SIZE = 100
 
@@ -19,12 +20,16 @@ class ResponseError(Exception):
 
 
 class HttpError(Exception):
-    def __init__(self, code:int, reason: str) -> None:
+    def __init__(self, code: int, reason: str) -> None:
         self.code = code
         self.reason = reason
 
 
-class AiohttpSession:
+class AsyncIamport:
+    """
+    sync Iamport -> async Iamport
+    """
+
     def __init__(
         self,
         *,
@@ -33,6 +38,7 @@ class AiohttpSession:
         imp_url: str = IAMPORT_API_URL,
         pool_size: int = DEFAULT_POOL_SIZE,
         time_out: int = DEFAULT_TIMEOUT,
+        token_refresh_gap: int = TOKEN_REFRESH_GAP,
     ) -> None:
         if imp_key is None or imp_secret is None:
             raise ValueError("IMP_KEY OR IMP_SECRET MISSED")
@@ -41,11 +47,15 @@ class AiohttpSession:
         self.imp_url = imp_url
         self.pool_size = pool_size
         self.time_out = time_out
+        self.token_refresh_gap = token_refresh_gap
         self.token: Optional[str] = None
-        self.token_expire: Optional[datetime] = None
+        self.token_expire: Optional[arrow.Arrow] = None
         self.session: Optional[aiohttp.ClientSession] = None
+        self.token: Optional[str] = None
 
-    def get_session(self) -> aiohttp.ClientSession:
+        self._init_session()
+
+    def _init_session(self) -> None:
         if self.session is None:
             timeout = aiohttp.ClientTimeout(total=self.time_out)
             connector = aiohttp.TCPConnector(
@@ -54,77 +64,38 @@ class AiohttpSession:
             self.session = aiohttp.ClientSession(
                 base_url=self.imp_url, timeout=timeout, connector=connector
             )
-        return self.session
 
     async def close_session(self) -> None:
         if self.session:
             await self.session.close()
             self.session = None
 
-    async def on_startup(self) -> None:
-        self.get_session()
-
-    async def on_shutdown(self) -> None:
-        await self.close_session()
-
     async def _get(self, url, payload=None) -> Dict:
-        headers = await self.get_auth_headers()
+        headers = await self._get_auth_headers()
         if self.session is not None:
             response = await self.session.get(url, headers=headers, params=payload)
-            return self.get_response(response)
+            return await self.get_response(response)
         else:
             raise ConnectionError("SESSION IS CLOSED")
 
     async def _post(self, url, payload=None) -> Dict:
-        headers = await self.get_auth_headers()
+        headers = await self._get_auth_headers()
         headers["Content-Type"] = "application/json"
         if self.session is not None:
             response = await self.session.post(
                 url, headers=headers, data=json.dumps(payload)
             )
-            return self.get_response(response)
+            return await self.get_response(response)
         else:
             raise ConnectionError("SESSION IS CLOSED")
-
 
     async def _delete(self, url) -> Dict:
-        headers = await self.get_auth_headers()
+        headers = await self._get_auth_headers()
         if self.session is not None:
             response = await self.session.delete(url, headers=headers)
-            return self.get_response(response)
+            return await self.get_response(response)
         else:
             raise ConnectionError("SESSION IS CLOSED")
-
-    async def get_auth_headers(self) -> Dict:
-        return {"Authorization": await self._get_token()}
-
-    async def _get_token(self) ->  Optional[str]:
-        if (
-            self.token is not None
-            and self.token_expire is not None
-            and (self.token_expire - datetime.utcnow()).total_seconds()
-            > VALID_TOKEN_GAP
-        ):
-            return self.token
-        else:
-            self.token = None
-            url = f"/users/getToken"
-            payload = {"imp_key": self.imp_key, "imp_secret": self.imp_secret}
-            if self.session is not None:
-                response = await self.session.post(
-                    url,
-                    headers={"Content-Type": "application/json"},
-                    data=json.dumps(payload),
-                )
-            else:
-                raise ConnectionError("SESSION IS CLOSED")
-        resp = await self.get_response(response)
-        timestamp = resp.get("expired_at")
-        if timestamp is not None:
-            timestamp_float = float(timestamp)
-            self.token_expire = datetime.fromtimestamp(timestamp_float)
-        self.token = resp.get("access_token")
-        return self.token
 
     @staticmethod
     async def get_response(response) -> Dict:
@@ -135,6 +106,36 @@ class AiohttpSession:
             raise ResponseError(result.get("code"), result.get("message"))
         return result.get("response")
 
+    async def _get_auth_headers(self) -> Dict:
+        return {"Authorization": await self._get_token()}
+
+    async def _get_token(self) -> Optional[str]:
+        if (
+            self.token is not None
+            and self.token_expire is not None
+            and (self.token_expire - arrow.utcnow()).seconds > self.token_refresh_gap
+        ):
+            return self.token
+        else:
+            self.token = None
+            url = "/users/getToken"
+            payload = {"imp_key": self.imp_key, "imp_secret": self.imp_secret}
+            if self.session is not None:
+                response = await self.session.post(
+                    url,
+                    headers={"Content-Type": "application/json"},
+                    data=json.dumps(payload),
+                )
+            else:
+                raise ConnectionError("SESSION IS CLOSED")
+        resp = await self.get_response(response)
+        timestamp_kst = resp.get("expired_at")
+        if timestamp_kst is not None:
+            timestamp_int = int(timestamp_kst)
+            self.token_expire = arrow.Arrow.fromtimestamp(timestamp_int)
+        self.token = resp.get("access_token")
+        return self.token
+
     async def find_by_status(self, status, **params) -> Dict:
         url = f"/payments/status/{status}"
         return await self._get(url, payload=params)
@@ -142,7 +143,7 @@ class AiohttpSession:
     async def find_by_merchant_uid(self, merchant_uid, status=None) -> Dict:
         url = f"/payments/find/{merchant_uid}"
         if status is not None:
-            url = f"/{status}"
+            url = f"{url}/{status}"
         return await self._get(url)
 
     async def find_by_imp_uid(self, imp_uid) -> Dict:
@@ -211,7 +212,7 @@ class AiohttpSession:
         return await self._post(url, kwargs)
 
     async def pay_schedule(self, **kwargs) -> Dict:
-        headers = await self.get_auth_headers()
+        headers = await self._get_auth_headers()
         headers["Content-Type"] = "application/json"
         url = f"/subscribe/payments/schedule"
         if "customer_uid" not in kwargs:
