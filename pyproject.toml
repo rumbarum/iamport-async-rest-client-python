@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "async-iamport"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["한바름 <rumbarum@gmail.com>"]
 readme = "README.md"
