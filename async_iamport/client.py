@@ -50,7 +50,6 @@ class AsyncIamport:
         self.token: Optional[str] = None
         self.token_expire: Optional[arrow.Arrow] = None
         self.session: Optional[aiohttp.ClientSession] = None
-        self.token: Optional[str] = None
 
         self._init_session()
 
