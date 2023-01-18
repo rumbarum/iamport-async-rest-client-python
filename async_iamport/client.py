@@ -126,13 +126,12 @@ class AsyncIamport:
                 )
             else:
                 raise ConnectionError("SESSION IS CLOSED")
-        resp = await self.get_response(response)
-        timestamp_kst = resp.get("expired_at")
-        if timestamp_kst is not None:
-            timestamp_int = int(timestamp_kst)
-            self.token_expire = arrow.Arrow.fromtimestamp(timestamp_int)
-        self.token = resp.get("access_token")
-        return self.token
+            resp = await self.get_response(response)
+            timestamp: Optional[int] = resp.get("expired_at")
+            if timestamp is not None:
+                self.token_expire = arrow.Arrow.utcfromtimestamp(timestamp)
+            self.token = resp.get("access_token")
+            return self.token
 
     async def find_by_status(self, status, **params) -> Dict:
         url = f"/payments/status/{status}"
