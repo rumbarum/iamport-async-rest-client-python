@@ -26,3 +26,11 @@ async def test_confirm_otp_certification(iamport):
     with pytest.raises(async_iamport.HttpError) as e:
         await iamport.confirm_otp_certification(**payload)
         assert e.code == 400
+
+
+@pytest.mark.asyncio
+async def test_adjust_prepare_amount(iamport):
+    payload = {"merchant_uid": "123456", "amount": "123456"}
+    with pytest.raises(async_iamport.HttpError) as e:
+        await iamport.adjust_prepare_amount(**payload)
+        assert e.code == 400
