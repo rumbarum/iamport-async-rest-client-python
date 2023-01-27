@@ -309,3 +309,27 @@ class AsyncIamport:
 
         url = f"/certifications/{imp_uid}"
         return await self._delete(url)
+
+    async def init_otp_certification(self, **kwargs) -> Dict:
+        """
+        init otp authentication through sms with personal information
+
+        POST 'IAMPORT_API_URL/certifications/otp/request'
+
+        :return: result
+        """
+
+        url = f"/certifications/otp/request"
+        return await self._post(url, payload=kwargs)
+
+    async def confirm_otp_certification(self, imp_uid: str, **kwargs) -> Dict:
+        """
+        complete otp authentication through sms with personal information
+
+        POST 'IAMPORT_API_URL/certifications/otp/confirm/{imp_uid}'
+
+        :return: result
+        """
+
+        url = f"/certifications/otp/confirm/{imp_uid}"
+        return await self._post(url, payload=kwargs)
