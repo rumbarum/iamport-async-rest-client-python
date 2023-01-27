@@ -285,10 +285,27 @@ class AsyncIamport:
         url = f"/vbanks/{imp_uid}"
         return await self._delete(url)
 
-    async def find_certification(self, imp_uid) -> Dict:
+    async def find_certification(self, imp_uid: str) -> Dict:
+        """
+        query sms authentication result
+
+        GET 'IAMPORT_API_URL/certifications/{imp_uid}'
+
+        :param imp_uid: imp_uid
+        :return: result
+        """
         url = f"/certifications/{imp_uid}"
         return await self._get(url)
 
-    async def cancel_certification(self, imp_uid) -> Dict:
+    async def cancel_certification(self, imp_uid: str) -> Dict:
+        """
+        delete sms authentication result
+
+        DELETE 'IAMPORT_API_URL/certifications/{imp_uid}'
+
+        :param imp_uid: imp_uid
+        :return: result
+        """
+
         url = f"/certifications/{imp_uid}"
         return await self._delete(url)
