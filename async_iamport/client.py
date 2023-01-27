@@ -87,6 +87,17 @@ class AsyncIamport:
         else:
             raise ConnectionError("SESSION IS CLOSED")
 
+    async def _put(self, url, payload=None) -> Dict[str, Any]:
+        headers = await self._get_auth_headers()
+        headers["Content-Type"] = "application/json"
+        if self.session is not None:
+            response = await self.session.put(
+                url, headers=headers, data=json.dumps(payload)
+            )
+            return await self.get_response(response)
+        else:
+            raise ConnectionError("SESSION IS CLOSED")
+
     async def _delete(self, url) -> Dict:
         headers = await self._get_auth_headers()
         if self.session is not None:
