@@ -1,7 +1,7 @@
 import json
 from http import HTTPStatus
 from socket import AF_INET
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import aiohttp
 import arrow
@@ -307,6 +307,22 @@ class AsyncIamport:
         response = await self._get(url)
         response_amount = response.get("amount")
         return response_amount == amount
+
+    async def adjust_prepare_amount(
+        self, merchant_uid: str, amount: float
+    ) -> Dict[str, Any]:
+        """
+        adjust amount of pre-registered payment
+
+        PUT 'IAMPORT_API_URL/payments/prepare'
+
+        :param merchant_uid: merchant unique id
+        :param amount: amount
+        :return: result
+        """
+        url = f"/payments/prepare"
+        payload = {"merchant_uid": merchant_uid, "amount": amount}
+        return await self._put(url, payload=payload)
 
     async def revoke_vbank_by_imp_uid(self, imp_uid) -> Dict:
         url = f"/vbanks/{imp_uid}"
