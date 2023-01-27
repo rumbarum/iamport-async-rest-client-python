@@ -270,12 +270,28 @@ class AsyncIamport:
         response_amount = response.get("amount")
         return status == "paid" and response_amount == amount
 
-    async def prepare(self, merchant_uid, amount) -> Dict:
-        url = f"/payments/prepare"
+    async def prepare(self, merchant_uid: str, amount: float) -> Dict:
+        """
+        register payment amount with uid in advance for safety
+        '/payments/prepare'
+
+        :param merchant_uid: merchant unique id
+        :param amount: amount
+        :return: result
+        """
+        url = "/payments/prepare"
         payload = {"merchant_uid": merchant_uid, "amount": amount}
         return await self._post(url, payload)
 
-    async def prepare_validate(self, merchant_uid, amount) -> bool:
+    async def prepare_validate(self, merchant_uid: str, amount: float) -> bool:
+        """
+        validate payment amount with uid on registered payment
+        '/payments/prepare/{merchant_uid}'
+
+        :param merchant_uid: merchant unique id
+        :param amount: amount
+        :return: result
+        """
         url = f"/payments/prepare/{merchant_uid}"
         response = await self._get(url)
         response_amount = response.get("amount")
