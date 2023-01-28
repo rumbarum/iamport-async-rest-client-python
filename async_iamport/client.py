@@ -339,16 +339,16 @@ class AsyncIamport:
 
         return await self._post(url, kwargs)
 
-    async def pay_schedule_get(self, merchant_id: str) -> Dict:
+    async def pay_schedule_get(self, merchant_uid: str) -> Dict:
         """
-        query scheduled payment by merchant_id
+        query scheduled payment by merchant_uid
 
         GET 'IAMPORT_API_URL/subscribe/payments/schedule/{merchant_uid}
 
-        :param merchant_id: merchant unique id
+        :param merchant_uid: merchant unique id
         :return: result
         """
-        url = f"/subscribe/payments/schedule/{merchant_id}"
+        url = f"/subscribe/payments/schedule/{merchant_uid}"
         return await self._get(url)
 
     async def pay_schedule_get_between(self, **kwargs) -> Dict:
