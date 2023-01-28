@@ -1,20 +1,10 @@
-import pytest
-
 import async_iamport
+import pytest
 
 
 @pytest.mark.asyncio
 async def test_customer_create(iamport):
     # Without 'card_number'
-    payload_notEnough = {
-        "customer_uid": "customer_1234",
-        "expiry": "2019-03",
-        "birth": "500203",
-    }
-
-    with pytest.raises(KeyError) as e:
-        await iamport.customer_create(**payload_notEnough)
-        assert "Essential parameter is missing!: card_number" in str(e)
 
     payload_full = {
         "customer_uid": "customer_1234",

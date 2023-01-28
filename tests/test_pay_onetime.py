@@ -1,9 +1,8 @@
 import random
 import string
 
-import pytest
-
 import async_iamport
+import pytest
 
 
 @pytest.mark.asyncio
@@ -11,20 +10,6 @@ async def test_pay_onetime(iamport):
     merchant_uid = "".join(
         random.choice(string.ascii_uppercase + string.digits) for _ in range(10)
     )
-
-    # Without 'card_number'
-    payload_not_enough = {
-        "merchant_uid": merchant_uid,
-        "amount": 5000,
-        "expiry": "2019-03",
-        "birth": "500203",
-        "pwd_2digit": "19",
-    }
-
-    try:
-        await iamport.pay_onetime(**payload_not_enough)
-    except KeyError as e:
-        assert "Essential parameter is missing!: card_number" in str(e)
 
     merchant_uid = "".join(
         random.choice(string.ascii_uppercase + string.digits) for _ in range(10)

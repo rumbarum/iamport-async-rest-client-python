@@ -295,17 +295,7 @@ class AsyncIamport:
         :param kwargs: keyword arguments
         :return: result
         """
-        url = f"/subscribe/payments/onetime"
-        for key in [
-            "merchant_uid",
-            "amount",
-            "card_number",
-            "expiry",
-            "birth",
-            "pwd_2digit",
-        ]:
-            if key not in kwargs:
-                raise KeyError("Essential parameter is missing!: %s" % key)
+        url = "/subscribe/payments/onetime"
 
         return await self._post(url, kwargs)
 
@@ -318,10 +308,7 @@ class AsyncIamport:
         :param kwargs: keyword arguments
         :return: result
         """
-        url = f"/subscribe/payments/again"
-        for key in ["customer_uid", "merchant_uid", "amount"]:
-            if key not in kwargs:
-                raise KeyError("Essential parameter is missing!: %s" % key)
+        url = "/subscribe/payments/again"
 
         return await self._post(url, kwargs)
 
@@ -332,10 +319,7 @@ class AsyncIamport:
         :param kwargs:
         :return:
         """
-        url = f"/subscribe/payments/foreign"
-        for key in ["merchant_uid", "amount", "card_number", "expiry"]:
-            if key not in kwargs:
-                raise KeyError("Essential parameter is missing!: %s" % key)
+        url = "/subscribe/payments/foreign"
 
         return await self._post(url, kwargs)
 
@@ -351,13 +335,7 @@ class AsyncIamport:
 
         headers = await self._get_auth_headers()
         headers["Content-Type"] = "application/json"
-        url = f"/subscribe/payments/schedule"
-        if "customer_uid" not in kwargs:
-            raise KeyError("customer_uid is required")
-        for key in ["merchant_uid", "schedule_at", "amount"]:
-            for schedules in kwargs["schedules"]:
-                if key not in schedules:
-                    raise KeyError("Essential parameter is missing!: %s" % key)
+        url = "/subscribe/payments/schedule"
 
         return await self._post(url, kwargs)
 
@@ -383,9 +361,6 @@ class AsyncIamport:
         :return: result
         """
         url = f"/subscribe/payments/schedule"
-        for key in ["schedule_from", "schedule_to"]:
-            if key not in kwargs:
-                raise KeyError("Essential parameter is missing!: %s" % key)
 
         return await self._get(url, kwargs)
 
@@ -399,8 +374,7 @@ class AsyncIamport:
         :return: result
         """
         url = f"/subscribe/payments/unschedule"
-        if "customer_uid" not in kwargs:
-            raise KeyError("customer_uid is required")
+
         return await self._post(url, kwargs)
 
     async def customer_create(self, **kwargs) -> Dict:
@@ -413,10 +387,8 @@ class AsyncIamport:
         :return: result
         """
         customer_uid = kwargs.get("customer_uid")
-        for key in ["customer_uid", "card_number", "expiry", "birth"]:
-            if key not in kwargs:
-                raise KeyError("Essential parameter is missing!: %s" % key)
         url = f"/subscribe/customers/{customer_uid}"
+
         return await self._post(url, kwargs)
 
     async def customer_get(self, customer_uid: str) -> Dict:
