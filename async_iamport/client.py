@@ -144,7 +144,17 @@ class AsyncIamport:
             self.token = resp.get("access_token")
             return self.token
 
-    async def find_by_status(self, status, **params) -> Dict:
+    async def find_by_status(self, status: str, **params) -> Dict:
+        """
+        query payment history by status
+
+        GET 'IAMPORT_API_URL/payments/status/{status}'
+
+        :param status: ["all", "ready", "paid", "cancelled", "failed"]
+        :param params: kwargs
+        :return: result
+        """
+
         url = f"/payments/status/{status}"
         return await self._get(url, payload=params)
 
