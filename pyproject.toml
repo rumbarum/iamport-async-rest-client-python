@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "async-iamport"
-version = "0.1.1"
+version = "0.2.0"
 description = ""
 authors = ["한바름 <rumbarum@gmail.com>"]
 readme = "README.md"
@@ -22,8 +22,15 @@ pytest-asyncio = "^0.20.3"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.1.1"
+version = "0.2.0"
 tag_format = "v$version"
+version_files = [
+    "pyproject.toml:version"
+]
+update_changelog_on_bump = true
+major_version_zero = true
+
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

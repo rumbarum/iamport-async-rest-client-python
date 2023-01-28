@@ -1,23 +1,11 @@
 import time
 
-import pytest
-
 import async_iamport
+import pytest
 
 
 @pytest.mark.asyncio
 async def test_pay_unschedule(iamport):
-    payload_without_customer_uid = {
-        # without 'customer_uid'
-        "merchant_uid": "pay_unschedule_%s"
-        % str(time.time()),
-    }
-
-    try:
-        await iamport.pay_unschedule(**payload_without_customer_uid)
-    except KeyError as e:
-        assert "customer_uid is required" in str(e)
-
     payload_full = {
         "customer_uid": "00000000",
         "merchant_uid": "pay_unschedule_%s" % str(time.time()),
