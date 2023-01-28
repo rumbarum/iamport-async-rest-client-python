@@ -287,6 +287,14 @@ class AsyncIamport:
         return status == "paid" and response_amount == amount
 
     async def pay_onetime(self, **kwargs) -> Dict:
+        """
+        payments once only with card information
+
+        POST 'IAMPORT_API_URL/subscribe/payments/onetime'
+
+        :param kwargs: keyword arguments
+        :return: result
+        """
         url = f"/subscribe/payments/onetime"
         for key in [
             "merchant_uid",
@@ -302,6 +310,14 @@ class AsyncIamport:
         return await self._post(url, kwargs)
 
     async def pay_again(self, **kwargs) -> Dict:
+        """
+        payment again with saved billing key
+
+        POST 'IAMPORT_API_URL/subscribe/payments/again'
+
+        :param kwargs: keyword arguments
+        :return: result
+        """
         url = f"/subscribe/payments/again"
         for key in ["customer_uid", "merchant_uid", "amount"]:
             if key not in kwargs:
@@ -309,23 +325,13 @@ class AsyncIamport:
 
         return await self._post(url, kwargs)
 
-    async def customer_create(self, **kwargs) -> Dict:
-        customer_uid = kwargs.get("customer_uid")
-        for key in ["customer_uid", "card_number", "expiry", "birth"]:
-            if key not in kwargs:
-                raise KeyError("Essential parameter is missing!: %s" % key)
-        url = f"/subscribe/customers/{customer_uid}"
-        return await self._post(url, kwargs)
-
-    async def customer_get(self, customer_uid) -> Dict:
-        url = f"/subscribe/customers/{customer_uid}"
-        return await self._get(url)
-
-    async def customer_delete(self, customer_uid) -> Dict:
-        url = f"/subscribe/customers/{customer_uid}"
-        return await self._delete(url)
-
     async def pay_foreign(self, **kwargs) -> Dict:
+        """
+        depreciated
+
+        :param kwargs:
+        :return:
+        """
         url = f"/subscribe/payments/foreign"
         for key in ["merchant_uid", "amount", "card_number", "expiry"]:
             if key not in kwargs:
@@ -334,6 +340,15 @@ class AsyncIamport:
         return await self._post(url, kwargs)
 
     async def pay_schedule(self, **kwargs) -> Dict:
+        """
+        register scheduled payment
+
+        POST 'IAMPORT_API_URL/subscribe/payments/schedule'
+
+        :param kwargs: keyword arguments
+        :return: result
+        """
+
         headers = await self._get_auth_headers()
         headers["Content-Type"] = "application/json"
         url = f"/subscribe/payments/schedule"
@@ -346,11 +361,27 @@ class AsyncIamport:
 
         return await self._post(url, kwargs)
 
-    async def pay_schedule_get(self, merchant_id) -> Dict:
+    async def pay_schedule_get(self, merchant_id: str) -> Dict:
+        """
+        query scheduled payment by merchant_id
+
+        GET 'IAMPORT_API_URL/subscribe/payments/schedule/{merchant_uid}
+
+        :param merchant_id: merchant unique id
+        :return: result
+        """
         url = f"/subscribe/payments/schedule/{merchant_id}"
         return await self._get(url)
 
     async def pay_schedule_get_between(self, **kwargs) -> Dict:
+        """
+        query scheduled payment by datetime range
+
+        GET 'IAMPORT_API_URL/subscribe/payments/schedule'
+
+        :param kwargs: keyword arguments
+        :return: result
+        """
         url = f"/subscribe/payments/schedule"
         for key in ["schedule_from", "schedule_to"]:
             if key not in kwargs:
@@ -359,10 +390,58 @@ class AsyncIamport:
         return await self._get(url, kwargs)
 
     async def pay_unschedule(self, **kwargs) -> Dict:
+        """
+        cancel scheduled payment
+
+        POST 'IAMPORT_API_URL/subscribe/payments/unschedule'
+
+        :param kwargs: keyword arguments
+        :return: result
+        """
         url = f"/subscribe/payments/unschedule"
         if "customer_uid" not in kwargs:
             raise KeyError("customer_uid is required")
         return await self._post(url, kwargs)
+
+    async def customer_create(self, **kwargs) -> Dict:
+        """
+        create customer billing key
+
+        POST 'IAMPORT_API_URL/subscribe/customers/{customer_uid}'
+
+        :param kwargs: keyword arguments
+        :return: result
+        """
+        customer_uid = kwargs.get("customer_uid")
+        for key in ["customer_uid", "card_number", "expiry", "birth"]:
+            if key not in kwargs:
+                raise KeyError("Essential parameter is missing!: %s" % key)
+        url = f"/subscribe/customers/{customer_uid}"
+        return await self._post(url, kwargs)
+
+    async def customer_get(self, customer_uid: str) -> Dict:
+        """
+        query customer billing key
+
+        GET 'IAMPORT_API_URL/subscribe/customers/{customer_uid}'
+
+        :param customer_uid: customer's payment method unique id
+        :return: result
+        """
+        url = f"/subscribe/customers/{customer_uid}"
+        return await self._get(url)
+
+    async def customer_delete(self, customer_uid: str) -> Dict:
+        """
+        delete customer billing key
+
+        DELETE 'IAMPORT_API_URL/subscribe/customers/{customer_uid}'
+
+        :param customer_uid: customer's payment method unique id
+        :return: result
+        """
+        url = f"/subscribe/customers/{customer_uid}"
+        return await self._delete(url)
 
     async def prepare(self, merchant_uid: str, amount: float) -> Dict:
         """
