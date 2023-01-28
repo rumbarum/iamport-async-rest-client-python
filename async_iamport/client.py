@@ -158,17 +158,44 @@ class AsyncIamport:
         url = f"/payments/status/{status}"
         return await self._get(url, payload=params)
 
-    async def find_by_merchant_uid(self, merchant_uid, status=None) -> Dict:
+    async def find_by_merchant_uid(
+        self, merchant_uid: str, status: Optional[str] = None
+    ) -> Dict:
+        """
+        query payment by merchant_uid and status(optional)
+
+        GET 'IAMPORT_API_URL/payments/{merchant_uid}'
+        or
+        GET 'IAMPORT_API_URL/payments/{merchant_uid}/{status}'
+
+        :param merchant_uid: merchant unique id
+        :param status: ["ready", "paid", "cancelled", "failed"]
+        :return: result
+        """
         url = f"/payments/find/{merchant_uid}"
         if status is not None:
             url = f"{url}/{status}"
         return await self._get(url)
 
-    async def find_by_imp_uid(self, imp_uid) -> Dict:
+    async def find_by_imp_uid(self, imp_uid: str) -> Dict:
+        """
+        query payment by imp_uid
+
+        GET 'IAMPORT_API_URL/payments/{imp_uid}'
+
+        :param imp_uid: iamport unique id
+        :return: result
+        """
         url = f"/payments/{imp_uid}"
         return await self._get(url)
 
     async def find(self, **kwargs) -> Dict:
+        """
+        query payments  by merchant_uid or imp_uid
+
+        :param kwargs: kwargs
+        :return: result
+        """
         merchant_uid = kwargs.get("merchant_uid")
         if merchant_uid:
             return await self.find_by_merchant_uid(merchant_uid)
@@ -178,9 +205,86 @@ class AsyncIamport:
             raise KeyError("merchant_uid or imp_uid is required")
         return await self.find_by_imp_uid(imp_uid)
 
-    async def _cancel(self, payload) -> Dict:
-        url = f"/payments/cancel"
+    async def _cancel(self, payload: dict) -> Dict:
+        """
+        cancel payment
+
+        POST 'IAMPORT_API_URL/payments/cancel'
+
+        :param payload: payload
+        :return: result
+        """
+        url = "/payments/cancel"
         return await self._post(url, payload)
+
+    async def cancel_by_merchant_uid(
+        self, merchant_uid: str, reason: str, **kwargs
+    ) -> Dict:
+        """
+        cancel payment by merchant_uid
+
+        POST 'IAMPORT_API_URL/payments/cancel'
+
+        :param merchant_uid: merchant unique id
+        :param reason: reason for cancel
+        :param kwargs: keyword arguments
+        :return: result
+        """
+
+        payload = {"merchant_uid": merchant_uid, "reason": reason}
+        if kwargs:
+            payload.update(kwargs)
+        return await self._cancel(payload)
+
+    async def cancel_by_imp_uid(self, imp_uid: str, reason: str, **kwargs) -> Dict:
+        """
+        cancel payment by imp_uid
+
+        POST 'IAMPORT_API_URL/payments/cancel'
+
+        :param imp_uid: iamport unique id
+        :param reason: reason for cancel
+        :param kwargs: keyword arguments
+        :return:
+        """
+        payload = {"imp_uid": imp_uid, "reason": reason}
+        if kwargs:
+            payload.update(kwargs)
+        return await self._cancel(payload)
+
+    async def cancel(self, reason: str, **kwargs) -> Dict:
+        """
+        cancel payment by merchant_uid or imp_uid
+
+        POST 'IAMPORT_API_URL/payments/cancel'
+
+        :param reason: reason for cancel
+        :param kwargs: keyword arguments
+        :return: result
+        """
+        imp_uid = kwargs.pop("imp_uid", None)
+        if imp_uid:
+            return await self.cancel_by_imp_uid(imp_uid, reason, **kwargs)
+
+        merchant_uid = kwargs.pop("merchant_uid", None)
+        if merchant_uid is None:
+            raise KeyError("merchant_uid or imp_uid is required")
+        return await self.cancel_by_merchant_uid(merchant_uid, reason, **kwargs)
+
+    async def is_paid(self, amount: float, **kwargs) -> bool:
+        """
+        check that payment is paid
+
+        :param amount: payment value
+        :param kwargs: keyword arguments
+        :return:
+        """
+        response = kwargs.get("response")
+        if not response:
+            response = await self.find(**kwargs)
+        status = response.get("status")
+        response_amount = response.get("amount")
+        return status == "paid" and response_amount == amount
 
     async def pay_onetime(self, **kwargs) -> Dict:
         url = f"/subscribe/payments/onetime"
@@ -258,38 +362,7 @@ class AsyncIamport:
         url = f"/subscribe/payments/unschedule"
         if "customer_uid" not in kwargs:
             raise KeyError("customer_uid is required")
-
         return await self._post(url, kwargs)
-
-    async def cancel_by_merchant_uid(self, merchant_uid, reason, **kwargs) -> Dict:
-        payload = {"merchant_uid": merchant_uid, "reason": reason}
-        if kwargs:
-            payload.update(kwargs)
-        return await self._cancel(payload)
-
-    async def cancel_by_imp_uid(self, imp_uid, reason, **kwargs) -> Dict:
-        payload = {"imp_uid": imp_uid, "reason": reason}
-        if kwargs:
-            payload.update(kwargs)
-        return await self._cancel(payload)
-
-    async def cancel(self, reason, **kwargs) -> Dict:
-        imp_uid = kwargs.pop("imp_uid", None)
-        if imp_uid:
-            return await self.cancel_by_imp_uid(imp_uid, reason, **kwargs)
-
-        merchant_uid = kwargs.pop("merchant_uid", None)
-        if merchant_uid is None:
-            raise KeyError("merchant_uid or imp_uid is required")
-        return await self.cancel_by_merchant_uid(merchant_uid, reason, **kwargs)
-
-    async def is_paid(self, amount, **kwargs) -> bool:
-        response = kwargs.get("response")
-        if not response:
-            response = await self.find(**kwargs)
-        status = response.get("status")
-        response_amount = response.get("amount")
-        return status == "paid" and response_amount == amount
 
     async def prepare(self, merchant_uid: str, amount: float) -> Dict:
         """
